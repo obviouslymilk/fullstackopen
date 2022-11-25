@@ -1,6 +1,6 @@
 const CountryItem = ({ country, onClick }) => {
     return <div>
-        {country.name.common}
+        {country.name.official}
         <button onClick={onClick}>show</button>
     </div>
 }
