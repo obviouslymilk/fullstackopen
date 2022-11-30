@@ -1,8 +1,13 @@
-import axios from 'axios'
 import { useEffect, useState } from 'react'
 import Filter from './Filter'
 import PersonForm from './PersonForm'
 import Persons from './Persons'
+import {
+  getAll,
+  deletePerson,
+  create,
+  update
+} from './services/persons';
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
@@ -10,8 +15,9 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
+
   useEffect(() => {
-    axios.get("http://localhost:3001/persons").then(response => setPersons(response.data))
+    getAll().then(allPersons => setPersons(allPersons));
   }, [])
 
   const handleNameChange = e => {
@@ -37,14 +43,39 @@ const App = () => {
     e.preventDefault();
 
     const isHaveName = element => element.name === newName;
+    const foundPerson = persons.find(isHaveName)
 
-    if (persons.find(isHaveName))
-      return alert(`${newName} is already in the phonebook`)
+    if (foundPerson) {
+      if (window.confirm(`${newName} is already added to phonebook, repalce the old number with a new one?`)) {
+        const newPerson = {
+          ...foundPerson,
+          number: newNumber
+        }
+        update(foundPerson.id, newPerson).then(person => {
+          setPersons(persons.map(p => {
+            return p.id === person.id ? person : p
+          }
+          ))
+        }).catch(() => {
+          alert(`Person ${foundPerson.name} was already deleted from server.`)
+        })
+      }
+    } else {
+      const newPerson = {
+        name: newName,
+        number: newNumber
+      }
+  
+      create(newPerson).then(person => {
+        setPersons(persons.concat(person))
+      })
+    }
+  }
 
-    setPersons(persons.concat({
-      name: newName,
-      number: newNumber
-    }))
+  const handleDeletePerson = id => {
+    deletePerson(id).then(() => {
+      setPersons(persons.filter(person => person.id !== id));
+    }) 
   }
 
   return (
@@ -52,9 +83,12 @@ const App = () => {
       <h2>Phonebook</h2>
       <Filter onInput={handleFilterChange} />
       <h3>Add a new:</h3>
-      <PersonForm onAddPerson={handleAddPerson} onNameChange={handleNameChange} onNumberChange={handleNumberChange} />
+      <PersonForm
+        onAddPerson={handleAddPerson}
+        onNameChange={handleNameChange}
+        onNumberChange={handleNumberChange} />
       <h2>Numbers</h2>
-      <Persons persons={filterPersons()} />
+      <Persons persons={filterPersons()} onDeletePerson={handleDeletePerson} />
     </div>
   )
 }
