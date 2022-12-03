@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Filter from './Filter'
+import Notification from './Notification';
 import PersonForm from './PersonForm'
 import Persons from './Persons'
 import {
@@ -14,6 +15,8 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+  const [notification, setNotification] = useState(null);
+  const [notificationType, setNotificationType] = useState('success')
 
 
   useEffect(() => {
@@ -39,6 +42,14 @@ const App = () => {
     return persons.filter(person => person.name.toLowerCase().includes(filter.toLowerCase()));
   }
 
+  const sendNotification = (message, type) => {
+    setNotification(message);
+    setNotificationType(type);
+    setTimeout(() => {
+      setNotification(null)
+    }, 5000)
+  }
+
   const handleAddPerson = e => {
     e.preventDefault();
 
@@ -53,11 +64,12 @@ const App = () => {
         }
         update(foundPerson.id, newPerson).then(person => {
           setPersons(persons.map(p => {
+            sendNotification(`Updated ${person.name}`, 'success')
             return p.id === person.id ? person : p
           }
           ))
         }).catch(() => {
-          alert(`Person ${foundPerson.name} was already deleted from server.`)
+          sendNotification(`Person ${foundPerson.name} was already deleted from server.`, 'error');
         })
       }
     } else {
@@ -68,6 +80,7 @@ const App = () => {
   
       create(newPerson).then(person => {
         setPersons(persons.concat(person))
+        sendNotification(`Added ${person.name}`, 'success')
       })
     }
   }
@@ -81,6 +94,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={notification} type={notificationType} />
       <Filter onInput={handleFilterChange} />
       <h3>Add a new:</h3>
       <PersonForm
